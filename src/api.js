@@ -1,46 +1,70 @@
-const rest = require(`./rest`);
-const ws = require(`./ws`);
-let type;
+'use strict';
 
-/**
- * Initialize API based on protocol and URL
- * 
- * @param {String} serverURL 
- * @returns 
- */
-function init(serverURL){
-  type = serverURL.slice(0, 2);
-  if (type === `ht`){
-    return rest.init(serverURL);
-  } else {
-    return ws.init(serverURL);
-  }
+// Requirements
+
+const Rest = require(`./rest`);
+const WS = require(`./ws`);
+
+
+// Source
+
+class API {
+    /**
+     * @param {Object} options { authServiceURL, mainServiceURL, pluginServiceURL }
+     */
+    constructor(options) {
+        const { authServiceURL, mainServiceURL, pluginServiceURL } = options;
+
+        const SelectedAPI = this.getType(mainServiceURL);
+
+        if (SelectedAPI) {
+            this.schema = new SelectedAPI({
+                authServiceURL,
+                mainServiceURL,
+                pluginServiceURL
+            });
+        } else {
+            throw new Error('unexpected mainServiceURL, please use allowed protocol');
+        }
+
+        return this.schema;
+    }
+
+    /**
+     * Returns current API
+     * 
+     * @returns 
+     */
+    getType(url) {
+        let parsedURL;
+        if (url) parsedURL = url.match(/^([a-z]{1,5}):\/\//);
+        if (!parsedURL || !parsedURL[1]) return;
+        const protocol = parsedURL[1].toLowerCase();
+        switch (protocol) {
+            case 'http': {
+                return Rest;
+                break;
+            }
+
+            case 'https': {
+                return Rest;
+                break;
+            }
+
+            case 'ws': {
+                return WS;
+                break;
+            }
+
+            default: {
+                return;
+                break;
+            }
+        }
+    }
 }
 
-/**
- * Returns api type
- * @returns {*}
- */
-function getType(){
-  return type;
-}
 
-/**
- * Returns current API
- * 
- * @returns 
- */
-function getAPI(){
-  if (type === `ht`){
-    return rest;
-  } else {
-    return ws;
-  }
-}
+// Exports
 
-module.exports = {
-  init,
-  getAPI,
-  type,
-  getType
-}
+module.exports = API;
